@@ -1,0 +1,4 @@
+run,min_glucose,max_glucose,mean_glucose,total_insulin_command,blocked_events,hypoglycemia_samples,hyperglycemia_samples
+baseline,77.168476,277.617183,102.73616015972222,3715.346231,0,0,9
+attacked,50.215222,277.617183,100.92571590277777,3887.742706,0,7,9
+defended,86.28996,277.617183,116.8099276111111,3073.259942,45,0,18

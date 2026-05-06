@@ -1,0 +1,7 @@
+run,attack_type,min_glucose,max_glucose,mean_glucose,total_insulin_command,blocked_events,hypoglycemia_samples,hyperglycemia_samples,detection_rate,true_positive,false_positive,true_negative,false_negative
+attacked_overdose_only,overdose_only,50.215222,277.617183,102.58771629861111,3765.062195,0,5,9,0.0,0,0,142,2
+defended_overdose_only,overdose_only,84.563716,277.617183,114.74157083333333,3065.156679,40,0,14,1.0,2,38,104,0
+attacked_repeat_only,repeat_only,61.372739,277.617183,102.36412964583333,3765.984433,0,0,9,0.0,0,0,140,4
+defended_repeat_only,repeat_only,85.66452,277.617183,115.83127120833335,3059.793427,42,0,14,1.0,4,38,102,0
+attacked_mismatch_only,mismatch_only,51.39686,277.617183,101.54788610416666,3798.483411,0,3,9,0.0,0,0,141,3
+defended_mismatch_only,mismatch_only,86.034825,277.617183,115.14735464583333,3070.414145,37,0,11,1.0,3,34,107,0

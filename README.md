@@ -341,20 +341,6 @@ The confusion matrix logic is time-step based:
 * actual unsafe = `attack_active`
 * predicted unsafe = command was blocked
 
-## Original SecPump Functionality
-
-The original SecPump hardware-oriented project remains in this repository:
-
-* `Scripts/Model-Sim.py`: software-only model simulation path.
-* `Scripts/Sec-Interface.py`: original interface script for pump simulation.
-* `Scripts/BlueCmd.py`: BLE command helper.
-* `Scripts/Exploit.py`: original exploit demonstration helper.
-* `SecPump-Vanilla/`: original non-vulnerable STM32 pump project.
-* `SecPump-Vuln/`: vulnerable STM32 pump project.
-* `SecPump-RISC-V/`: RISC-V version.
-
-Hardware flashing and BLE setup are not required to run the host extension demos and evaluations. They remain relevant only if you are working with the original SecPump hardware workflow.
-
 ## Why This Matters
 
 This framework demonstrates how cyber-physical systems can be protected against unsafe or malicious control commands using runtime validation, integrity verification, and adaptive decision-making.

@@ -8,7 +8,8 @@ This work transforms SecPump from a hardware-focused security demonstration into
 
 ## Original SecPump Basis
 
-This project is based on the original SecPump workbench.  
+This project is based on the original SecPump workbench.
+
 However, this repository contains only the host-side extension code.
 
 The original hardware-oriented components (such as Scripts/, SecPump-Vanilla/, SecPump-Vuln/, and SecPump-RISC-V/) are not required to run this extension and are not included in this repository.

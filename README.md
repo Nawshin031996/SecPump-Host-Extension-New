@@ -6,12 +6,12 @@ This repository is based on the original SecPump open insulin pump security work
 
 This work transforms SecPump from a hardware-focused security demonstration into a software-driven security evaluation framework with runtime defense, attack simulation, and measurable evaluation metrics.
 
-Original SecPump provides:
+## Original SecPump Basis
 
-* Bergman-style glucose-insulin simulation scripts in `Scripts/`
-* STM32 firmware projects in `SecPump-Vanilla/` and `SecPump-Vuln/`
-* a RISC-V version under `SecPump-RISC-V/`
-* BLE-oriented scripts such as `BlueCmd.py` and `Exploit.py`
+This project is based on the original SecPump workbench.  
+However, this repository contains only the host-side extension code.
+
+The original hardware-oriented components (such as Scripts/, SecPump-Vanilla/, SecPump-Vuln/, and SecPump-RISC-V/) are not required to run this extension and are not included in this repository.
 
 My extension adds a host-side software defense layer that can be run without flashing STM32 firmware or using BLE hardware. It reuses the original software simulation behavior as a baseline, injects unsafe insulin command scenarios, evaluates runtime safety monitors, and demonstrates secure command transmission over localhost TCP.
 

@@ -69,8 +69,6 @@ The system does not require a user-selected attack mode. Unsafe or malicious beh
 ```text
 .
 ├── README.md
-├── COPYING
-├── sonar-project.properties
 ├── requirements.txt
 ├── results/
 └── src/

@@ -1,285 +1,308 @@
-Note: All project source code and outputs are located inside the SecPump-Host-Extension/ directory.
-# SecPump Host Safety Extension
+# Extended SecPump: Host-Side Security Defense Framework for Insulin Pump Systems
 
-Author: Nawshin Tabassum Tanny
-Course: CS 7389F
-
----
+This repository is based on the original SecPump open insulin pump security workbench and adds a software-only host-side defense framework for attack simulation, runtime insulin command validation, HMAC/hash integrity checking, interactive demos, logging, metrics, and plots.
 
 ## Overview
 
-In this project, I extend the SecPump software-only insulin pump simulation by adding a runtime safety and security monitoring layer. The goal is to detect unsafe or malicious insulin delivery behavior and prevent life-threatening outcomes using rule-based validation and anomaly detection.
+This work transforms SecPump from a hardware-focused security demonstration into a software-driven security evaluation framework with runtime defense, attack simulation, and measurable evaluation metrics.
 
-The extension builds on the existing SecPump simulation (`Scripts/Model-Sim.py`) and enhances it with attack scenarios, monitoring mechanisms, fail-safe control, logging, and evaluation.
+Original SecPump provides:
 
----
+* Bergman-style glucose-insulin simulation scripts in `Scripts/`
+* STM32 firmware projects in `SecPump-Vanilla/` and `SecPump-Vuln/`
+* a RISC-V version under `SecPump-RISC-V/`
+* BLE-oriented scripts such as `BlueCmd.py` and `Exploit.py`
+
+My extension adds a host-side software defense layer that can be run without flashing STM32 firmware or using BLE hardware. It reuses the original software simulation behavior as a baseline, injects unsafe insulin command scenarios, evaluates runtime safety monitors, and demonstrates secure command transmission over localhost TCP.
 
 ## Quick Start
 
-Clone the repository and install dependencies:
+```bash
+git clone https://github.com/Nawshin031996/SecPump-Host-Extension-New.git
+cd SecPump-Host-Extension-New
+pip install -r requirements.txt
+python src/intelligent_defense_demo.py
+```
+
+## Key Contributions
+
+* Interactive attack simulation for manually entering glucose and insulin commands.
+* Automatic safe or attack-like command classification from glucose and requested insulin command values.
+* HMAC/hash-based integrity checking for command packets.
+* Rule-based, adaptive, and intelligent runtime defense monitors.
+* Attack type labeling and risk scoring in the intelligent defense path.
+* CSV logging, metrics, blocked-event records, comparison plots, and confusion matrices.
+* Two-terminal sender/receiver demo that separates command sender behavior from receiver-side automatic verification and risk classification.
+
+## System Architecture
+
+The extended software path is:
+
+```text
+SecPump model baseline
+  -> attack scenario or user-entered command
+  -> optional secure packet creation
+  -> HMAC/hash verification
+  -> runtime defense monitor
+  -> ALLOW or BLOCK decision
+  -> logs, metrics, plots, or console output
+```
+
+For the two-terminal demo:
+
+```text
+secure_sender.py
+  -> localhost TCP packet
+  -> secure_receiver.py
+  -> HMAC verification
+  -> IntelligentDefenseMonitor
+  -> detected attack type + risk score + ALLOW/BLOCK
+```
+
+The sender acts as a test generator and is not trusted by the receiver. The receiver does not trust a scenario label; it verifies the HMAC and classifies risk from the received packet contents.
+
+The system does not require a user-selected attack mode. Unsafe or malicious behavior is inferred automatically from glucose values, requested insulin commands, dynamic thresholds, and recent command history. HMAC verification ensures that tampered packets are rejected before any safety evaluation.
+
+## Repository Structure
+
+```text
+.
+├── README.md
+├── COPYING
+├── sonar-project.properties
+├── requirements.txt
+├── results/
+└── src/
+    ├── baseline_adapter.py
+    ├── attack_scenarios.py
+    ├── safety_monitor.py
+    ├── adaptive_safety_monitor.py
+    ├── intelligent_defense_monitor.py
+    ├── anomaly_detector.py
+    ├── run_simulation.py
+    ├── run_multi_attack_evaluation.py
+    ├── metrics.py
+    ├── plotting.py
+    ├── secure_channel.py
+    ├── secure_sender.py
+    ├── secure_receiver.py
+    ├── secure_interactive_demo.py
+    ├── intelligent_defense_demo.py
+    └── interactive_attack_demo.py
+```
+
+## Setup Instructions
+
+Install dependencies from the repository root:
 
 ```bash
-git clone https://github.com/Nawshin031996/SecPump-Host-Extension.git
-cd SecPump-Host-Extension/SecPump-Host-Extension
 pip install -r requirements.txt
 ```
 
-Run the main evaluation:
+`requirements.txt` currently lists:
+
+```text
+numpy
+scipy
+matplotlib
+pandas
+scikit-learn
+```
+
+The current source code directly uses NumPy, SciPy, and Matplotlib. `pandas` and `scikit-learn` are listed but are not currently imported by the source files.
+
+## How to Run
+
+Run commands from the repository root.
+
+### Main Combined Evaluation
+
+```bash
+python src/run_simulation.py
+```
+
+This produces:
+
+* `baseline`: no attack, no monitor
+* `attacked`: combined attack scenario, no blocking
+* `defended`: combined attack scenario passed through `SafetyMonitor`
+
+### Isolated Attack Evaluation
 
 ```bash
 python src/run_multi_attack_evaluation.py
 ```
 
-Run the two-terminal secure communication demo:
+This separately evaluates:
 
-Terminal 1:
+* `overdose_only`
+* `repeat_only`
+* `mismatch_only`
+
+### Interactive Single-Terminal Demos
+
+```bash
+python src/interactive_attack_demo.py
+python src/secure_interactive_demo.py
+python src/intelligent_defense_demo.py
+```
+
+These demos prompt for glucose and requested insulin command values and print monitor decisions.
+
+The interactive demos now require only:
+
+* glucose input
+* requested insulin command
+
+In `intelligent_defense_demo.py`, the system automatically:
+
+* creates a secure packet
+* verifies HMAC integrity
+* computes dynamic safety thresholds
+* evaluates risk score
+* detects attack type
+* decides `ALLOW` or `BLOCK`
+
+Example inputs:
+
+* glucose `120`, command `10`, tamper = `n`: HMAC `PASSED`, expected `ALLOW`
+* glucose `120` or `130`, command `80`, tamper = `n`: HMAC `PASSED`, expected `BLOCK`
+* glucose `80`, command above the displayed threshold, tamper = `n`: expected `BLOCK`
+
+### HMAC Integrity Test (Optional)
+
+The demo also supports testing packet tampering.
+
+After entering glucose and insulin command, the user is prompted:
+
+```text
+Tamper packet before verification? (y/n)
+```
+
+* If `n`: HMAC verification passes, the monitor computes threshold/risk/attack type, and the command is decided as `ALLOW` or `BLOCK`.
+* If `y`: the packet is modified after signing, HMAC verification fails, detected attack type is `tampering_attack`, and the decision is `REJECT`.
+
+Expected behavior:
+
+* verification result: `FAILED`
+* detected attack type: `tampering_attack`
+* decision: `REJECT`
+
+The safety monitor is not executed if HMAC verification fails.
+
+Tamper example:
+
+* glucose `120`, command `10`, tamper = `y`: HMAC `FAILED`, decision `REJECT`
+
+### Two-Terminal Secure Communication Demo
+
+The two-terminal demo simulates command transmission over localhost TCP. The sender only asks for glucose and requested insulin command; it does not ask the user to choose a normal, malicious, or tampered scenario. The receiver verifies HMAC integrity and independently detects unsafe behavior from the received command, glucose, dynamic thresholds, risk score, and recent command history.
+
+Terminal 1 starts the receiver:
 
 ```bash
 python src/secure_receiver.py
 ```
 
-Terminal 2:
+Terminal 2 starts the interactive sender:
 
 ```bash
 python src/secure_sender.py
 ```
 
----
+`secure_sender.py` also supports CLI usage:
 
-## Background
+```bash
+python src/secure_sender.py --glucose 120 --command 30
+python src/secure_sender.py --glucose 120 --command 30 --tamper
+```
 
-The SecPump platform provides a software-based simulation of an insulin pump system, including glucose dynamics, insulin delivery, and control logic using a Bergman-style physiological model.
+Interactive sender mode prompts only for glucose and requested insulin command. It sends a valid HMAC packet by default, and the receiver independently decides whether the command is safe or unsafe. Tampering is tested separately with the explicit CLI tamper option.
 
-I successfully ran the original `Scripts/Model-Sim.py` after applying a minimal Python 3 compatibility fix (`print(log)`), confirming the baseline system behavior.
+## Attack Scenarios
 
----
+Implemented scripted simulation attacks in `attack_scenarios.py`:
 
-## What I Implemented
+* `overdose_only`: large insulin spike around hour 6.
+* `repeat_only`: rapid repeated injection commands around hour 10.
+* `mismatch_only`: high insulin command during lower-glucose behavior around hour 18.5.
+* `combined`: all three scripted attacks in one run.
 
-This extension introduces a host-side safety monitoring framework without modifying the original SecPump implementation.
+Implemented sender behavior in `secure_sender.py`:
 
-### 1. Baseline Adapter
+* interactive mode: prompts only for glucose and requested insulin command, then sends a valid HMAC packet.
+* CLI mode without `--tamper`: sends the provided glucose and command with a valid HMAC.
+* `--tamper`: signs a valid packet and then modifies `insulin_command`, causing receiver-side HMAC verification failure.
 
-* Reuses Bergman-style glucose-insulin equations
-* Maintains PID controller parameters
-* Uses SciPy `odeint` for numerical integration
-* Preserves:
+## Defense Mechanisms
 
-  * 24-hour simulation horizon
-  * 10-minute sampling interval
-  * Meal disturbance timing
+### Rule-Based Safety Monitor
 
----
+`SafetyMonitor` checks:
 
-### 2. Attack Scenarios
+* max insulin per injection
+* max insulin per rolling time window
+* glucose-insulin consistency
+* sudden insulin spike anomaly
 
-Simulated unsafe insulin delivery behaviors:
+Unsafe commands are blocked, delivered command is set to `0.0`, and mode becomes `FAIL_SAFE`.
 
-* **Overdose attack** (sudden large insulin spike)
-* **Rapid repeated injections**
-* **Glucose-insulin mismatch** (low glucose with high insulin)
+### Adaptive Safety Monitor
 
----
+`AdaptiveSafetyMonitor` adds glucose-dependent thresholds:
 
-### 3. Safety Monitoring Layer
+* glucose below 70: no insulin allowed
+* glucose below 90: lower max command
+* glucose 90 to 180: normal max command
+* glucose above 180: higher max command
+* dropping glucose makes thresholds stricter
 
-The system enforces:
+### Intelligent Defense Monitor
 
-* Maximum insulin per injection
-* Maximum insulin within a rolling time window
-* Glucose-insulin consistency checks
-* Sudden insulin spike anomaly detection
+`IntelligentDefenseMonitor` adds:
 
----
+* adaptive thresholds from recent allowed command history
+* risk score from `0.0` to `1.0`
+* detected attack type labels:
+  * `none`
+  * `overdose_attack`
+  * `rapid_repeat_attack`
+  * `glucose_insulin_mismatch_attack`
+  * `sudden_spike_attack`
+  * `tampering_attack`
+  * `unknown_high_risk`
 
-### 4. Anomaly Detection
+### Hash / Integrity Verification
 
-Detects abnormal command patterns such as:
+`secure_channel.py` implements HMAC-based packet integrity:
 
-* Rapid insulin spikes
-* Unusual deviation from normal insulin behavior
+* `create_secure_packet(...)`
+* `verify_and_decode_packet(...)`
+* `tamper_packet(...)`
 
----
+The secure demos reject tampered packets before passing them to a monitor.
 
-### 5. Fail-Safe Mechanism
+## Outputs & Logs
 
-When unsafe behavior is detected:
+Generated outputs are written under:
 
-* Command is **BLOCKED**
-* Insulin delivery is set to `0.0`
-* System enters **FAIL_SAFE mode**
-* Reason for blocking is logged
+```text
+results/
+```
 
----
-
-### 6. Logging
-
-The system generates structured logs:
+Main evaluation outputs:
 
 * `baseline_log.csv`
 * `attacked_log.csv`
 * `defended_log.csv`
 * `blocked_events.csv`
+* `metrics.csv`
+* `glucose_comparison.png`
+* `insulin_comparison.png`
+* `blocked_events.png`
+* `confusion_matrix.png`
 
----
-
-### 7. Evaluation Metrics
-
-The system computes:
-
-* Accuracy
-* Precision
-* Recall
-* F1-score
-* Detection rate
-* Glucose safety range statistics
-
----
-
-### 8. Visualization
-
-Generated plots include:
-
-* Glucose comparison (baseline vs attacked vs defended)
-* Insulin comparison
-* Blocked events over time
-* Confusion matrix
-
----
-
-### 9. Adaptive Safety and Secure Communication
-
-Additional defensive extensions include:
-
-* Adaptive safety monitoring
-* HMAC-based secure command verification
-* Two-terminal sender/receiver communication demo
-
----
-
-## Architecture
-
-```text
-SecPump Simulation (Model-Sim.py)
-        ↓
-Baseline Adapter
-        ↓
-Attack Injection
-        ↓
-Safety Monitor + Anomaly Detection
-        ↓
-Decision: ALLOW / BLOCK (FAIL_SAFE)
-        ↓
-Logging + Metrics + Plots
-```
-
----
-
-## How to Run
-
-Install required dependencies:
-
-```bash
-pip install -r SecPump-Host-Extension/requirements.txt
-# OR
-python -m pip install -r Scripts/requirements-modern.txt
-```
-
-Run the simulation:
-
-```bash
-python SecPump-Host-Extension/src/run_simulation.py
-```
-
----
-
-## Outputs
-
-All outputs are saved in:
-
-```text
-SecPump-Host-Extension/results/
-```
-
-Generated files:
-
-* `baseline_log.csv` – Normal system behavior
-* `attacked_log.csv` – System under attack
-* `defended_log.csv` – System with safety monitoring
-* `blocked_events.csv` – Blocked unsafe commands
-* `metrics.csv` – Evaluation results
-* `glucose_comparison.png` – Glucose behavior comparison
-* `insulin_comparison.png` – Insulin command comparison
-* `blocked_events.png` – Blocked command visualization
-* `confusion_matrix.png` – Detection performance
-
----
-
-## Results Summary
-
-The attack scenario caused glucose levels to drop to unsafe ranges (~50 mg/dL), indicating dangerous insulin delivery behavior.
-
-With the safety monitoring layer enabled:
-
-* Unsafe insulin commands were blocked (45 events)
-* Glucose levels remained in a safer range (~86 mg/dL)
-* The system successfully prevented critical hypoglycemia conditions
-
-This demonstrates the effectiveness of the proposed safety monitoring framework.
-
----
-
-## Alignment with Project Proposal
-
-This implementation directly satisfies the project objectives:
-
-* Enforces strict safety limits on insulin delivery
-* Detects abnormal or malicious insulin command patterns
-* Identifies inconsistencies between glucose levels and insulin delivery
-* Triggers fail-safe mode when unsafe behavior is detected
-* Logs and analyzes blocked unsafe events
-
-The system follows the planned workflow:
-baseline simulation → attack injection → monitoring → evaluation.
-
----
-
-## Limitations
-
-* Uses simulated data, not real patient data
-* Simplified physiological model
-* No integration with physical insulin pump hardware
-* Safety thresholds are heuristic, not clinically validated
-* The safety monitoring layer is intentionally conservative and may block some necessary insulin commands in normal conditions. This behavior prioritizes patient safety by preventing potentially dangerous insulin delivery, but may lead to suboptimal glucose control in certain cases.
-
----
-
-## Future Work
-
-* Integration with real hardware systems
-* Advanced machine learning-based anomaly detection
-* Formal verification of safety constraints
-* Real-time deployment in embedded systems
-
----
-
-## Disclaimer
-
-This project is for academic and research purposes only. It is not a medical device and must not be used for real healthcare decisions.
-
----
-
-## Extended Evaluation: Isolated Attack Analysis
-
-The original `run_simulation.py` workflow evaluates a combined attack configuration that includes overdose, rapid repeated injection, and glucose-insulin mismatch behavior in one run. The additional multi-attack evaluator was added to isolate each attack type and make it easier to compare how the monitor performs against each class independently.
-
-Run it from the repository root:
-
-```bash
-python SecPump-Host-Extension/src/run_multi_attack_evaluation.py
-```
-
-It generates these additional files in `SecPump-Host-Extension/results/`:
+Isolated attack outputs:
 
 * `attacked_overdose_only_log.csv`
 * `defended_overdose_only_log.csv`
@@ -295,107 +318,65 @@ It generates these additional files in `SecPump-Host-Extension/results/`:
 * `confusion_matrix_repeat_only.png`
 * `confusion_matrix_mismatch_only.png`
 
-`multi_attack_metrics.csv` reports glucose statistics, total delivered insulin command, blocked events, safety-band counts, detection rate, and per-attack confusion matrix counts for runs where attack labels are available. This strengthens the evaluation by separating combined-attack behavior from per-attack detection behavior, making it clearer which safety rules are responsible for each blocked class.
+## Evaluation
 
----
+`metrics.csv` includes:
 
-## Interactive Attack Demo
+* min, max, and mean glucose
+* total delivered insulin command
+* blocked event count
+* hypoglycemia sample count
+* hyperglycemia sample count
 
-Run the interactive command-line demo from the repository root:
+`multi_attack_metrics.csv` additionally includes:
 
-```bash
-python SecPump-Host-Extension/src/interactive_attack_demo.py
-```
+* attack type
+* detection rate
+* true positives
+* false positives
+* true negatives
+* false negatives
 
-This demo allows a user to manually submit insulin commands, including malicious or unsafe commands, and observe whether the safety monitor allows delivery or blocks the command in fail-safe mode.
+The confusion matrix logic is time-step based:
 
----
+* actual unsafe = `attack_active`
+* predicted unsafe = command was blocked
 
-## Optional Extension: Adaptive Safety and Secure Command Demo
+## Original SecPump Functionality
 
-The project includes both a single-terminal secure interactive demo and a two-terminal sender/receiver secure communication demo.
+The original SecPump hardware-oriented project remains in this repository:
 
-Run the single-terminal secure adaptive command-line demo from the repository root:
+* `Scripts/Model-Sim.py`: software-only model simulation path.
+* `Scripts/Sec-Interface.py`: original interface script for pump simulation.
+* `Scripts/BlueCmd.py`: BLE command helper.
+* `Scripts/Exploit.py`: original exploit demonstration helper.
+* `SecPump-Vanilla/`: original non-vulnerable STM32 pump project.
+* `SecPump-Vuln/`: vulnerable STM32 pump project.
+* `SecPump-RISC-V/`: RISC-V version.
 
-```bash
-python SecPump-Host-Extension/src/secure_interactive_demo.py
-```
+Hardware flashing and BLE setup are not required to run the host extension demos and evaluations. They remain relevant only if you are working with the original SecPump hardware workflow.
 
-This optional extension adds adaptive insulin thresholds that respond to current glucose and glucose trend, making the safety rules more real-time than fixed thresholds alone. It also simulates secure command handling with tamper-resistant packet integrity checks. Tampered packets are rejected before reaching the monitor, while valid but unsafe commands are still passed to the adaptive safety monitor and blocked in fail-safe mode.
+## Why This Matters
 
-The two-terminal sender/receiver demo extends this idea by sending HMAC-protected command packets over localhost TCP between separate processes.
+This framework demonstrates how cyber-physical systems can be protected against unsafe or malicious control commands using runtime validation, integrity verification, and adaptive decision-making.
 
----
+## Limitations / Future Work
 
-## Two-Terminal Secure Communication Demo
+* This extension is software-only and does not implement real BLE command transmission.
+* The localhost TCP sender/receiver demo models communication security behavior but is not a hardware transport.
+* HMAC uses a hard-coded demonstration key in `secure_channel.py`; real deployments need key management.
+* Safety thresholds and the physiological model are simplified and not clinically validated.
+* Conservative blocking can improve safety but may also block commands that could improve glucose control in some simulated cases.
+* `pandas` and `scikit-learn` are listed in the extension requirements but are not currently used by the source code.
+* TODO: add automated tests for monitor decisions, HMAC verification, generated CSVs, and plots.
+* TODO: document any intended use of `pandas` or `scikit-learn`, or remove them from requirements if they remain unused.
 
-This demo simulates real-time communication between a sender/controller/attacker and a receiver/pump monitor. The sender sends glucose and insulin command packets to the receiver over localhost TCP. The receiver verifies message integrity using HMAC before applying the `IntelligentDefenseMonitor`, which reports adaptive thresholds, risk score, detected attack type, and final ALLOW/BLOCK decision.
+## Disclaimer
 
-The sender-side scenario is used only to generate test cases. The receiver does not rely on this information. All detection and decision-making are performed independently based on the received packet, HMAC verification, and runtime safety analysis.
+This project is for academic and research demonstration only. It is not a medical device, is not clinically validated, and must not be used for real healthcare decisions.
 
-It demonstrates three cases:
+## License and Attribution
 
-* Normal command: valid HMAC and safe insulin command -> ALLOW / NORMAL
-* Malicious command: valid HMAC but unsafe insulin command -> BLOCK / FAIL_SAFE
-* Tampered command: invalid HMAC after packet modification -> COMMUNICATION_INTEGRITY_FAILURE
+The repository is based on SecPump and retains the original license file (`COPYING`). If using the original SecPump work for research, cite the SecPump publication referenced by the upstream project:
 
-How to run:
-
-Terminal 1 receiver:
-
-```bash
-python SecPump-Host-Extension/src/secure_receiver.py
-```
-
-Terminal 2 sender interactive mode:
-
-```bash
-python SecPump-Host-Extension/src/secure_sender.py
-```
-
-The sender supports an interactive loop when run without command-line arguments. It prompts for glucose, requested insulin command, and a sender scenario to simulate, then asks whether to send another command.
-
-CLI examples:
-
-```bash
-python SecPump-Host-Extension/src/secure_sender.py --glucose 120 --command 30 --mode normal
-python SecPump-Host-Extension/src/secure_sender.py --glucose 120 --command 120 --mode malicious
-python SecPump-Host-Extension/src/secure_sender.py --glucose 120 --command 30 --mode tamper
-```
-
-Expected behavior:
-
-* normal: HMAC verification PASSED, decision ALLOW
-* malicious: HMAC verification PASSED, decision BLOCK, mode FAIL_SAFE, risk score shown
-* tamper: HMAC verification FAILED, communication integrity failure
-
-Note:
-This is a software-only communication simulation. It does not implement real BLE hardware communication, but it models the security effect of authenticated command transmission and tamper detection.
-
----
-
-## Advanced Intelligent Defense Extension
-
-This optional extension adds `IntelligentDefenseMonitor`, a runtime defense module that expands the adaptive safety idea with learned behavior, HMAC/hash authentication, and richer detection output.
-
-It includes:
-
-* Adaptive threshold learning from recent allowed insulin command history
-* Glucose-aware dynamic dose limits that become stricter during low or dropping glucose
-* Explicit attack type labeling for overdose, rapid repeat, glucose-insulin mismatch, sudden spike, tampering, and unknown high-risk behavior
-* A risk score from `0.0` to `1.0` for each evaluated command
-* Interactive command entry with HMAC/hash verification before monitor evaluation
-
-Run the interactive demo from the repository root:
-
-```bash
-python SecPump-Host-Extension/src/intelligent_defense_demo.py
-```
-
-This extension is optional and does not modify the core simulation outputs.
-
----
-
-## Final Summary
-
-This project demonstrates how security through HMAC-based integrity verification and safety through runtime insulin validation can be combined to protect a cyber-physical healthcare system from both communication-level and control-level attacks.
+C. Bresch, D. Hely, S. Chollet, and R. Lysecky, "SecPump: A Connected Open Source Infusion Pump for Security Research Purposes," IEEE Embedded Systems Letters, 2020.

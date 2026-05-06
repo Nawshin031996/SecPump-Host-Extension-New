@@ -360,8 +360,3 @@ This framework demonstrates how cyber-physical systems can be protected against 
 
 This project is for academic and research demonstration only. It is not a medical device, is not clinically validated, and must not be used for real healthcare decisions.
 
-## License and Attribution
-
-The repository is based on SecPump and retains the original license file (`COPYING`). If using the original SecPump work for research, cite the SecPump publication referenced by the upstream project:
-
-C. Bresch, D. Hely, S. Chollet, and R. Lysecky, "SecPump: A Connected Open Source Infusion Pump for Security Research Purposes," IEEE Embedded Systems Letters, 2020.
